@@ -1,0 +1,154 @@
+---
+title: "Random Variables and Plots"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Random Variables and Plots
+
+This file will show how to generate random samples and filter data, and how to plot data. 
+
+
+```{r}
+dat <- read.csv("femaleMiceWeights.csv")
+install.packages("downloader") 
+library(downloader)
+head(dat)
+dat[12,2]#12 row, second column
+col_11 <- (dat$Bodyweight)[11]
+col_11 
+head(dat)
+nrow(dat)
+max(dat$Bodyweight)
+row37 <- dat[3:7,]
+row37
+mean(row37$Bodyweight)
+```
+
+# Generate a random sample of size 1 from the numbers 13 to 24
+
+```{r}
+random_row <- sample(13:24, size = 1)
+```
+
+# Find the weight of the mouse represented by that row
+```{r}
+mouse_weight <- dat$Bodyweight[random_row]
+mouse_weight
+```
+
+# select specific column
+
+Use filter and select 
+
+```{r}
+install.packages("dplyr")
+install.packages("utf8")
+library(dplyr)
+controls <- filter(dat, Diet=="chow")
+controls <- select(controls, Bodyweight)
+unlist(controls)
+controls <- filter(dat,Diet=="chow") %>% 
+  select(Bodyweight) %>% unlist
+```
+
+
+# Filter rows where "order" is equal to "primates"
+
+```{r}
+library(dplyr)
+filtered_msleep <- msleep %>%
+  filter(order == "Primates")
+```
+
+
+# View the resulting data frame
+
+```{r}
+View(filtered_msleep)
+nrow(filtered_msleep)
+class(filtered_msleep)
+```
+
+# Plots 
+
+seq:it generates values
+It takes three arguments: the start value, the end value, and the step size (increment)
+floor(min(x):largest integer less than or equal to the minimum value in the dataset 'x.'
+ceiling(max(x):  smallest integer greater than or equal to the maximum value in the dataset 'x.'
+
+# Histogram
+```{r}
+install.packages("UsingR")
+library(UsingR)
+install.packages("htmlTable")
+library(UsingR)
+x=father.son$fheight
+length(x)
+round(sample(x,20),1)
+
+hist(x,breaks=seq(floor(min(x)),ceiling(max(x))),
+     main="Height histogram",xlab="Height in inches")
+```
+
+# line plot
+ecdf:empirical cumulative probability distribution of 'x'
+(xs) is used to evaluate the ECDF at the specified sequence of 'xs.'
+l:line plot 
+```{r}
+xs<-seq(floor(min(x)), ceiling(max(x)),0.1)
+plot(xs,ecdf(x)(xs),type="l",
+     xlab="Height in inches",ylab="F(x)")
+```
+
+
+## QQ Plot
+
+We can tell if data is normally distributed from QQ Plot. 
+
+```{r}
+ps <- seq(0.01,0.99,.01)
+qs <- quantile(x,ps)
+normalqs <-pnorm(ps,mean(x),sd(x))
+plot(normalqs,qs,xlab="Normal percentiles",ylab="Height percentiles")
+abline(0,1) 
+
+load("skew.RData")
+dim(dat)#dimension
+par(mfrow = c(3,3))
+for (i in 1:9) {
+  qqnorm(dat[, i], main = paste("QQ Plot - Variable", i))
+}
+```
+
+## Box Plot
+when data is not normally distributed , QQ is not effective. Boxplot is good. 
+
+```{r}
+data(exec.pay, package="UsingR")
+hist(exec.pay)
+qqnorm(exec.pay)
+qqline(exec.pay)
+
+boxplot(exec.pay, ylab="10,000s of dollars", ylim=c(0,400))
+```
+
+Box Plot using split
+
+```{r}
+head(InsectSprays)
+boxplot(split(InsectSprays$count, InsectSprays$spray), main = "Boxplot by Spray", xlab = "Spray", ylab = "Count")
+```
+
+Box Plot using formula
+
+```{r}
+boxplot(count ~ spray, data = InsectSprays, main = "Boxplot by Spray", xlab = "Spray", ylab = "Count")
+```
+
+
+## Compare between two mice group (healthy and overweight)
+
