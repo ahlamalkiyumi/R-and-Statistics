@@ -1,0 +1,392 @@
+---
+title: "Statistical Tests"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Statistical Tests
+
+This file has concepts about Null hypothesis , p-value, t-test, and CLT. 
+
+
+## Compare between two mice group (healthy and overweight)
+
+```{r }
+dat <- read.csv("femaleMiceWeights.csv")
+control <- filter(dat,Diet=="chow") %>% 
+  select(Bodyweight) %>% unlist
+treatment <- filter(dat, Diet=="hf") %>%
+  select(Bodyweight) %>% unlist
+mean(treatment)
+mean(control)
+```
+
+Now will access the full population and take a sample to to help us answer if the difference happened by chance or not 
+```{r }
+population <-read.csv("femaleControlsPopulation.csv")
+population <-unlist(population)
+mean(sample(population,12))
+```
+
+
+# Excercises
+```{r }
+library(downloader)
+url <- "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/femaleControlsPopulation.csv"
+filename <- basename(url)
+download(url, destfile=filename)
+x <- unlist(read.csv(filename)) #entire population
+RNGkind("Mersenne-Twister", "Inversion", "Rejection") 
+mean(x)
+set.seed(5)
+x2 <- sample(population,5)
+abs(mean(x2) - mean(x))
+```
+
+## Null hypothesis and p-value
+
+If p-value <0.05 : there is a significant difference between the two groups
+
+```{r }
+obs <- mean(treatment) - mean(control)
+n <- 10000
+nulls <- vector("numeric",n)#empty vector
+for (i in 1:n){
+  control <- sample(population,12)
+  treatment <-sample(population,12)
+  nulls[i] <- mean(treatment) - mean(control)
+}
+hist(nulls)
+mean(abs (nulls) > obs)
+```
+
+## Use Central Limit Theorem
+
+The theorem states that if you take a large sample from a population, the sample's mean will be normally distributed. 
+```{r }
+library(rafalib)
+qqnorm(nulls)
+qqline(nulls)
+```
+
+## Exercises
+```{r }
+set.seed(1)
+n <-1000
+sampleavg <- vector("numeric",n)#empty vector
+for (i in 1:n){
+  sampledat <- sample (x, 5)
+  sampleavg[i] <- mean(sampledat)
+}
+prop <- mean((abs(sampleavg) - mean(x)) > 1)
+```
+
+## Probability Distributions 
+```{r }
+install.packages("gapminder")
+library(gapminder)
+data(gapminder)
+head(gapminder)
+```
+
+What is the proportion of countries in 1952 that have a life expectancy less than or equal to 40?
+```{r }
+lifex <- filter(gapminder, year=="1952") %>%
+  select(lifeExp) %>% unlist
+mean(lifex <=40)
+```
+
+## Normal Distribution
+mu and sigma are the most important values
+when we standardize data (find z), will have have same units. 
+```{r }
+x <= unlist (read.csv("femaleControlsPopulation.csv"))
+set.seed(1)
+n <- 1000
+averages5 <- vector ("numeric",n)
+for (i in 1:n){
+  X <- sample(x,5)
+  averages5[i] <- mean(X)
+```
+
+```{r }
+set.seed(1)
+n <- 1000
+averages50 <- vector("numeric",n)
+for (i in 1:n) {
+  X <- sample(x,50)
+  averages50[i] <- mean(X)
+}
+hist(averages5)
+hist(averages50)
+```
+
+Calculate the proportion between 23 and 25 
+```{r }
+proportion_between_23_and_25 <- mean(averages50 > 23 & averages50 < 25)
+cat("Proportion of averages between 23 and 25:", proportion_between_23_and_25, "\n")
+```
+
+What is the proportion of observations between 23 and 25 in a normal distribution with average 23.9 and standard deviation 0.43?
+```{r }
+mu <- 23.9
+sigma <- 0.43
+prop25 <- pnorm(25, mean=mu, sd= sigma)
+prop23 <- pnorm(23, mean=mu, sd= sigma)
+prop2325 <- prop25 - prop23 
+cat("Proportion of averages between 23 and 25 in normal distribution  :", prop2325, "\n")
+```
+
+## Population and Samples CLT
+
+```{r }
+dat <- read.csv("mice_pheno.csv")
+#remove the lines that contain missing values
+dat <- na.omit(dat)
+library(dplyr)
+x <- filter(dat, Diet=="chow" & Sex == "M") %>% select(Bodyweight) %>% unlist
+mean(x)
+sd(x)
+set.seed(1)
+X = sample(x,25)
+X_mean <-  mean(X)
+#Use dplyr to create a vector y with the body weight of all males on the high fat hf) diet.
+#What is this population's average?
+y = filter(dat,Diet=="hf" & Sex == "M" ) %>% select(Bodyweight) %>% unlist
+mean(y)
+popsd(y)
+```
+
+Use dplyr to create a vector y with the body weight of all males on the high fat hf) diet.#What is this population's average?
+```{r }
+y = filter(dat,Diet=="hf" & Sex == "M" ) %>% select(Bodyweight) %>% unlist
+mean(y)
+popsd(y)
+```
+
+Set the seed at 1. Take a random sample  of size 25 from y.
+```{r }
+set.seed(1)
+Y = sample(y,25)
+Y_mean <- mean(Y)
+abs(Y_mean - X_mean)
+abs( ( mean(y) - mean(x) ) - ( mean(Y) - mean(X) ) )
+
+x <- filter(dat, Sex=="F" & Diet=="chow") %>% select(Bodyweight) %>% unlist
+set.seed(2)
+X <- sample(x,25)
+y <- filter(dat, Sex=="F" & Diet=="hf") %>% select(Bodyweight) %>% unlist
+set.seed(2)
+Y <- sample(y,25)
+abs( ( mean(y) - mean(x) ) - ( mean(Y) - mean(X) ) )
+```
+
+If a list of numbers has a distribution that is well approximated by the normal distribution,
+what proportion of these numbers are within one standard deviation away from the list's average?
+```{r }
+list_of_numbers <- rnorm(100, mean = 0, sd = 1)
+mean_val <- mean(list_of_numbers)
+sd_val <- sd(list_of_numbers)
+cum_prob_upper <- pnorm(mean_val + sd_val, mean = mean_val, sd = sd_val)
+cum_prob_lower <- pnorm(mean_val - sd_val, mean = mean_val, sd = sd_val)
+```
+
+Calculate the proportion within one standard deviation?
+```{r }
+proportion_within_one_sd <- cum_prob_upper - cum_prob_lower
+cat("Proportion within one standard deviation:", proportion_within_one_sd, "\n")
+```
+
+Calculate the proportion within 2 standard deviation?
+```{r }
+prob_upper <- pnorm(mean_val + 2*sd_val, mean = mean_val, sd = sd_val)
+prob_lower <- pnorm(mean_val - 2*sd_val, mean = mean_val, sd = sd_val)
+proportion <- prob_upper - prob_lower
+```
+
+Calculate the proportion within 3 standard deviation
+```{r }
+pnorm(3) - pnorm(-3)
+```
+
+Define y to be the weights of males on the control diet.
+What proportion of the mice are within one standard deviation away from the average weight?
+```{r }
+y <- filter(dat, Sex=="M" & Diet == 'chow') %>% select(Bodyweight) %>% unlist
+library(rafalib)
+mean_val <- mean(y)
+sd_val <-popsd(y)
+```
+
+Calculate the proportion within one standard deviation?
+```{r }
+z_score <- (y - mean(y))/popsd(y) 
+mean(abs(z_score) <= 1)
+```
+
+
+## T-test
+```{r }
+dat <- read.csv("femaleMiceWeights.csv")
+#Healthy group
+control <- filter(dat,Diet=="chow") %>% 
+  select(Bodyweight) %>% unlist
+#overweight group
+treatment <- filter(dat, Diet=="hf") %>%
+  select(Bodyweight) %>% unlist
+N <- length(treatment)
+obs <- mean(treatment) - mean(control)
+```
+
+to do t-test we need to estimate the standard error
+```{r }
+se <- sqrt(
+  var(treatment)/N +
+    var(control)/N
+)
+```
+
+obtain t-value
+```{r }
+ttest <- obs/se
+```
+
+P-value for one tail
+```{r }
+1 - pnorm(ttest)
+```
+
+P-value for two tail
+```{r }
+2* (1-pnorm(ttest))
+```
+
+t-test
+```{r }
+ttest <- t.test(treatment, control)
+ttest
+qqnorm(control)
+qqline(control)
+```
+
+## Calculating z-score
+n: Number of dice rolls
+p : probability
+
+```{r }
+set.seed(1)
+n <- 100 
+n_simulations <- 10000
+p <- 1/6
+simulate_z <- function() {
+  x <- sample(1:6, size = n, replace = TRUE)
+  proportion_6s <- mean(x == 6)  
+  z <- (proportion_6s - p) / sqrt(p * (1 - p) / n)
+  return(z)
+}
+```
+
+```{r }
+simulations <- replicate(n_simulations, simulate_z())
+proportion_greater_than_2 <- mean(abs(simulations) > 2)
+cat("Proportion of times |z| was larger than 2:", proportion_greater_than_2, "\n")
+qqnorm(simulations)
+qqline(simulations)
+```
+
+## Compare between 4 different ps and ns ans see which one has the best normal Distribution
+```{r }
+ps <- c(0.5,0.5,0.01,0.01)
+ns <- c(5,30,30,100)
+library(rafalib)
+mypar(4,2)
+for(i in 1:4){
+  p <- ps[i]
+  sides <- 1/p
+  n <- ns[i]
+  zs <- replicate(10000,{
+    x <- sample(1:sides,n,replace=TRUE)
+    (mean(x==1) - p) / sqrt(p*(1-p)/n)
+  }) 
+  hist(zs,nclass=7)
+  qqnorm(zs)
+  abline(0,1)
+}
+```
+
+
+## CLT
+```{r }
+dat <- read.csv('femaleMiceWeights.csv')
+X <- filter(dat, Diet=="chow") %>% select(Bodyweight) %>% unlist
+Y <- filter(dat, Diet=="hf") %>% select(Bodyweight) %>% unlist
+```
+
+# Use the CLT to approximate the probability that our estimate X is off by more than 2 grams from mu 
+
+se : sample mean standard error
+
+```{r }
+sigma <- sd(X) 
+n <- length(X)
+sample_avg <- mean(X)
+se <- sigma/ sqrt(n) 
+```
+
+# Calculate the z-scores for 2 grams above and below the mean
+```{r }
+z_upper <- (sample_avg + 2 - mean(X)) / se
+z_lower <- (sample_avg - 2 - mean(X)) / se
+```
+
+# Use the pnorm function to calculate the probabilities
+```{r }
+prop_u <- 1- pnorm(z_upper)
+prop_l <- pnorm(z_lower)
+```
+
+# Sum the probabilities for more than 2 grams above and below
+```{r }
+sum <- prop_u + prop_l
+cat("Probability that the estimate is off by more than 2 grams from the true mean:",sum, "\n")
+```
+
+## Quiz week 2
+## Question 1
+```{r }
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+library(downloader) 
+url <- "https://raw.githubusercontent.com/genomicsclass/dagdata/master/inst/extdata/femaleControlsPopulation.csv"
+filename <- basename(url)
+download(url, destfile=filename)
+x <- unlist( read.csv(filename) )
+```
+
+# What proportion of these 1,000 averages are more than 1 gram away from the average of x ?
+```{r }
+set.seed(1)
+n <- 1000
+res <- vector('double',n)
+for (i in seq(n)) {
+  avg_sample <- mean(sample(x,50))
+  res[[i]] <- avg_sample
+}
+mean(abs(res-mean(x)) > 1)
+```
+
+## Question 2
+#What is the proportion of countries in 1952 that have a life expectancy longer than 40 years but shorter than 60 years?
+
+```{r }
+library(gapminder)
+data(gapminder)
+head(gapminder)
+life_ex = filter(gapminder, year=="1952") %>% select(lifeExp) %>% unlist
+life_x = sum(life_ex >40 & life_ex<60)
+nnrow = nrow(filter(gapminder, year == 1952))
+life_x/nnrow
+```
+
